@@ -1,4 +1,4 @@
-# Device Audit Details
+# Audit Details
 
 This little project was built out of necessity. I work in Education, where we often have hundreds of iPads to sort and re-allocate at the end of each year. While the units are labelled, it's not always possible to trust the labels! 😂 
 
