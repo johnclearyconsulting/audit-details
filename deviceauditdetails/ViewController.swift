@@ -37,7 +37,7 @@ final class ViewController: UIViewController {
         headerLabel.font = .preferredFont(forTextStyle: .footnote)
         headerLabel.textColor = .secondaryLabel
         
-        let urlString = "https://github.com/johnclearyconsulting/device-audit-details"
+        let urlString = "https://github.com/johnclearyconsulting/audit-details"
         
         var fullText = "The details below are provided by your MDM using managed App Preferences.\nDocumentation on preference keys is available here:\n\(urlString)\n"
         
@@ -223,7 +223,7 @@ final class ViewController: UIViewController {
 
 extension ViewController {
     @objc private func openDocsLink() {
-        if let url = URL(string: "https://github.com/johnclearyconsulting/device-audit-details") {
+        if let url = URL(string: "https://github.com/johnclearyconsulting/audit-details") {
             UIApplication.shared.open(url)
         }
     }
