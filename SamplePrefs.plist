@@ -5,9 +5,9 @@
 	<key>serial</key>
 	<string>C02XXXXXXX</string>
 	<key>user</key>
-	<string>Sample User</string>
+	<string>John Cleary</string>
 	<key>upn</key>
-	<string>sample.user@example.com</string>
+	<string>john@cleary.au</string>
 	<key>debugging</key>
 	<false/>
 	<key>logo_base64</key>
