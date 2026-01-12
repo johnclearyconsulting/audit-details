@@ -16,7 +16,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		43272FD42F067DD0009099EF /* Exceptions for "deviceauditdetails" folder in "auditdetails" target */ = {
+		43272FD42F067DD0009099EF /* Exceptions for "auditdetails" folder in "auditdetails" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -26,12 +26,12 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		43272FC42F067DCE009099EF /* deviceauditdetails */ = {
+		43272FC42F067DCE009099EF /* auditdetails */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				43272FD42F067DD0009099EF /* Exceptions for "deviceauditdetails" folder in "auditdetails" target */,
+				43272FD42F067DD0009099EF /* Exceptions for "auditdetails" folder in "auditdetails" target */,
 			);
-			path = deviceauditdetails;
+			path = auditdetails;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -51,7 +51,7 @@
 			isa = PBXGroup;
 			children = (
 				432CDFD02F0698FF00A80857 /* SamplePrefs.plist */,
-				43272FC42F067DCE009099EF /* deviceauditdetails */,
+				43272FC42F067DCE009099EF /* auditdetails */,
 				43272FC32F067DCE009099EF /* Products */,
 			);
 			sourceTree = "<group>";
@@ -80,7 +80,7 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				43272FC42F067DCE009099EF /* deviceauditdetails */,
+				43272FC42F067DCE009099EF /* auditdetails */,
 			);
 			name = auditdetails;
 			packageProductDependencies = (
@@ -155,7 +155,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 94B9X684Y4;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = deviceauditdetails/Info.plist;
+				INFOPLIST_FILE = auditdetails/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Audit Details";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -194,7 +194,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 94B9X684Y4;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = deviceauditdetails/Info.plist;
+				INFOPLIST_FILE = auditdetails/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Audit Details";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;

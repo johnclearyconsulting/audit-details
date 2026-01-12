@@ -1,7 +1,8 @@
 import UIKit
 import CoreImage.CIFilterBuiltins
 
-final class ViewController: UIViewController {
+// MAIN INTERFACE
+final class DeviceDetailsViewController: UIViewController {
 
     private struct Field {
         let key: String
@@ -14,90 +15,110 @@ final class ViewController: UIViewController {
         .init(key: "upn",    label: "User Principal Name")
     ]
 
-    private enum Section: Int, CaseIterable {
+    private enum DetailsTableSections: Int, CaseIterable {
         case serial
         case userUpn
         case summary
     }
-    private let tableView = UITableView(frame: .zero, style: .insetGrouped)
+    
+    private let detailsTable = UITableView(frame: .zero, style: .insetGrouped)
 
     override func viewDidLoad() {
+        
+        // This lets UIViewController do its baseline setup. In UIKit, skipping this is usually a bug.
         super.viewDidLoad()
         
+        // Hide the nav bar (because we're building our own header)
         navigationController?.setNavigationBarHidden(true, animated: false)
 
-        let hasLogo = (loadLogoImage() != nil)
         
-        // Note: Only show title if no logo.
-        title = hasLogo ? "" : "Device Details"
+        // If there's a logo, import it
+        let headingLogo: UIImageView? = {
+            guard let image = loadLogoImage() else { return nil }
+            return UIImageView(image: image)
+        }()
         
-        let headerLabel = UILabel()
-        headerLabel.numberOfLines = 0
-        headerLabel.textAlignment = .center
-        headerLabel.font = .preferredFont(forTextStyle: .footnote)
-        headerLabel.textColor = .secondaryLabel
+        if let headingLogo {
+            headingLogo.contentMode = .scaleAspectFit
+            headingLogo.backgroundColor = .clear
+            headingLogo.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                headingLogo.heightAnchor.constraint(equalToConstant: 96),
+                headingLogo.widthAnchor.constraint(lessThanOrEqualToConstant: 260)
+            ])
+        }
         
-        let urlString = "https://github.com/johnclearyconsulting/audit-details"
-        
-        var fullText = "The details below are provided by your MDM using managed App Preferences.\nDocumentation on preference keys is available here:\n\(urlString)\n"
-        
-        headerLabel.isUserInteractionEnabled = true
+        // Set Heading Text
+        let headingLabel = UILabel()
+        headingLabel.text = "Device Details"
+        headingLabel.font = .preferredFont(forTextStyle: .title2)
+        headingLabel.textAlignment = .center
+        headingLabel.numberOfLines = 1
+                    
+        // Set Documentation
+        let documentationLabel = UILabel()
+        documentationLabel.numberOfLines = 0
+        documentationLabel.textAlignment = .center
+        documentationLabel.font = .preferredFont(forTextStyle: .footnote)
+        documentationLabel.textColor = .secondaryLabel
+        documentationLabel.isUserInteractionEnabled = true
 
         let tap = UITapGestureRecognizer(target: self, action: #selector(openDocsLink))
-        headerLabel.addGestureRecognizer(tap)
-
-        let titleLabel = UILabel()
-        titleLabel.text = "Device Details"
-        titleLabel.font = .preferredFont(forTextStyle: .title2)
-        titleLabel.textAlignment = .center
-        titleLabel.numberOfLines = 1
+        documentationLabel.addGestureRecognizer(tap)
         
-        let headerStack = UIStackView()
-        headerStack.axis = .vertical
-        headerStack.alignment = .center
-        headerStack.spacing = 12
-
-        if let logo = hasLogo ? loadLogoImage() : nil {
-            let logoView = UIImageView(image: logo)
-            logoView.contentMode = .scaleAspectFit
-            logoView.backgroundColor = .clear
-            logoView.translatesAutoresizingMaskIntoConstraints = false
-            NSLayoutConstraint.activate([
-                logoView.heightAnchor.constraint(equalToConstant: 96),
-                logoView.widthAnchor.constraint(lessThanOrEqualToConstant: 260)
-            ])
-            headerStack.addArrangedSubview(logoView)
-        }
-
-        headerStack.addArrangedSubview(titleLabel)
+        // Set Documentation URL
+        let githubURLString = "https://github.com/johnclearyconsulting/audit-details"
         
+        // Set Default Text for Documentation Label
+        let documentationText = "Documentation on preference keys is available here:\n\(githubURLString)\n"
+
+        let dataSourceLabel = UILabel()
+        dataSourceLabel.numberOfLines = 1
+        dataSourceLabel.textAlignment = .center
+        let baseFont = UIFont.preferredFont(forTextStyle: .subheadline)
+        let boldDescriptor = baseFont.fontDescriptor.withSymbolicTraits(.traitBold) ?? baseFont.fontDescriptor
+        dataSourceLabel.font = UIFont(descriptor: boldDescriptor, size: 0)
+       
+        // Check if using sample data, and update dataSourceLabel Text
         if usingSampleData() {
-            
-            fullText = "Documentation on preference keys is available here:\n\(urlString)\n"
-
-            let sampleLabel = UILabel()
-            sampleLabel.text = "⚠️ Currently showing sample details -- no MDM preferences present) ⚠️"
-            sampleLabel.numberOfLines = 1
-            sampleLabel.textAlignment = .center
-            
-            let baseFont = UIFont.preferredFont(forTextStyle: .subheadline)
-            let boldDescriptor = baseFont.fontDescriptor.withSymbolicTraits(.traitBold) ?? baseFont.fontDescriptor
-            sampleLabel.font = UIFont(descriptor: boldDescriptor, size: 0)
-            
-            sampleLabel.textColor = .systemOrange
-            headerStack.addArrangedSubview(sampleLabel)
+            dataSourceLabel.text = "⚠️ No MDM preferences present. Sample details displayed. ⚠️"
+            dataSourceLabel.textColor = .systemOrange
+       } else {
+            dataSourceLabel.text = "✅ The details below are provided by your MDM using managed App Preferences. ✅"
+            dataSourceLabel.textColor = .systemGreen
         }
-        
-        let attributed = NSMutableAttributedString(string: fullText)
-        let range = (fullText as NSString).range(of: urlString)
+
+        let attributed = NSMutableAttributedString(string: documentationText)
+        let range = (documentationText as NSString).range(of: githubURLString)
         if range.location != NSNotFound {
             attributed.addAttribute(.foregroundColor, value: UIColor.link, range: range)
             attributed.addAttribute(.underlineStyle, value: NSUnderlineStyle.single.rawValue, range: range)
         }
-        headerLabel.attributedText = attributed
         
-        headerStack.addArrangedSubview(headerLabel)
+        documentationLabel.attributedText = attributed
+
         
+        // Build Header Stack
+        let headerStack = UIStackView()
+        headerStack.axis = .vertical
+        headerStack.alignment = .center
+        // headerStack.spacing = 12
+
+        // Add Logo if exists to headerStack
+        if let headingLogo { headerStack.addArrangedSubview(headingLogo) }
+        
+        // Add heading text to headerStack
+        headerStack.addArrangedSubview(headingLabel)
+        
+        // Add documentation text to headerStack
+        headerStack.addArrangedSubview(documentationLabel)
+
+        // Add dataSourceLabel to headerStack
+        headerStack.addArrangedSubview(dataSourceLabel)
+        
+        
+        
+        // Create a container for the headerStack (for spacing / sizing etc.)
         let headerContainer = UIView()
         headerContainer.addSubview(headerStack)
         headerStack.translatesAutoresizingMaskIntoConstraints = false
@@ -108,30 +129,40 @@ final class ViewController: UIViewController {
             headerStack.bottomAnchor.constraint(equalTo: headerContainer.bottomAnchor, constant: -12)
         ])
 
-        tableView.tableHeaderView = headerContainer
+        
+        
+        // Set the table's header view to headerContainer
+        detailsTable.tableHeaderView = headerContainer
         headerContainer.layoutIfNeeded()
         headerContainer.frame.size.height = headerStack.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize).height + 24
         
+        detailsTable.backgroundColor = .white
+        detailsTable.separatorStyle = .none
+        detailsTable.allowsSelection = true // JWC TO DO: Set to False before release
+        detailsTable.dataSource = self
+        detailsTable.estimatedRowHeight = 260
+        detailsTable.rowHeight = UITableView.automaticDimension
+        detailsTable.register(AuditCell.self, forCellReuseIdentifier: AuditCell.reuseID)
+        detailsTable.register(TwoUpCell.self, forCellReuseIdentifier: TwoUpCell.reuseID)
+
+
+        // Set DeviceDetailsViewController properties
         view.backgroundColor = .white
 
-        tableView.backgroundColor = .white
-        tableView.separatorStyle = .none
-        tableView.allowsSelection = false
-        tableView.dataSource = self
-        tableView.estimatedRowHeight = 260
-        tableView.rowHeight = UITableView.automaticDimension
-        tableView.register(AuditCell.self, forCellReuseIdentifier: AuditCell.reuseID)
-        tableView.register(TwoUpCell.self, forCellReuseIdentifier: TwoUpCell.reuseID)
+        // Add detailsTable to view
+        view.addSubview(detailsTable)
 
-        view.addSubview(tableView)
-        tableView.translatesAutoresizingMaskIntoConstraints = false
+        // Set detailsTable properties (e.g. sizing)
+        detailsTable.translatesAutoresizingMaskIntoConstraints = false
+
         NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
+            detailsTable.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            detailsTable.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            detailsTable.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            detailsTable.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
 
+        // Not sure what this is for yet!
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(defaultsChanged),
@@ -146,11 +177,11 @@ final class ViewController: UIViewController {
 
     @objc private func defaultsChanged() {
         DispatchQueue.main.async {
-            self.tableView.reloadData()
+            self.detailsTable.reloadData()
         }
     }
     
-    // --- SamplePrefs.plist fallback (for App Review / unmanaged installs) ---
+    // --- Read SamplePrefs.plist fallback (for App Review / unmanaged installs) ---
     private lazy var samplePrefs: [String: Any] = {
         guard
             let url = Bundle.main.url(forResource: "SamplePrefs", withExtension: "plist"),
@@ -221,7 +252,7 @@ final class ViewController: UIViewController {
     }
 }
 
-extension ViewController {
+extension DeviceDetailsViewController {
     @objc private func openDocsLink() {
         if let url = URL(string: "https://github.com/johnclearyconsulting/audit-details") {
             UIApplication.shared.open(url)
@@ -229,63 +260,32 @@ extension ViewController {
     }
 }
 
-extension ViewController: UITableViewDataSource {
 
-    func numberOfSections(in tableView: UITableView) -> Int {
-        Section.allCases.count
-    }
 
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        guard let s = Section(rawValue: section) else { return 0 }
-        switch s {
-        case .serial: return 1
-        case .userUpn: return 1
-        case .summary: return 1
-        }
-    }
+// GENERATAE QR CODE
+enum QR {
+    private static let context = CIContext()
+    private static let filter = CIFilter.qrCodeGenerator()
 
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+    static func make(from string: String, size: CGFloat) -> UIImage? {
+        filter.setValue(Data(string.utf8), forKey: "inputMessage")
+        filter.correctionLevel = "M"
 
-        let debugging = configBool(forKey: "debugging")
+        guard let output = filter.outputImage else { return nil }
 
-        guard let s = Section(rawValue: indexPath.section) else {
-            return UITableViewCell()
-        }
+        let extent = output.extent.integral
+        let scale = min(size / extent.width, size / extent.height)
+        let scaled = output.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
 
-        switch s {
-        case .serial:
-            let cell = tableView.dequeueReusableCell(withIdentifier: AuditCell.reuseID, for: indexPath) as! AuditCell
-            let v = configValue(forKey: "serial")
-            cell.configure(title: "Serial Number", subtitle: "Serial", value: v, qrText: v, showSubtitle: debugging)
-            return cell
-
-        case .userUpn:
-            let cell = tableView.dequeueReusableCell(withIdentifier: TwoUpCell.reuseID, for: indexPath) as! TwoUpCell
-            let userVal = configValue(forKey: "user")
-            let upnVal  = configValue(forKey: "upn")
-            cell.configure(
-                left: (title: "Primary User", subtitle: "user", value: userVal),
-                right: (title: "User Principal Name", subtitle: "upn", value: upnVal),
-                showSubtitle: debugging
-            )
-            return cell
-
-        case .summary:
-            let cell = tableView.dequeueReusableCell(withIdentifier: AuditCell.reuseID, for: indexPath) as! AuditCell
-            let json = summaryJSON()
-            cell.configure(
-                title: "Summary",
-                subtitle: "JSON",
-                value: json,
-                qrText: "\(json)",
-                isSummary: true,
-                showSubtitle: debugging
-            )
-            return cell
-        }
+        guard let cgimg = context.createCGImage(scaled, from: scaled.extent) else { return nil }
+        return UIImage(cgImage: cgimg)
     }
 }
 
+
+
+// CELL DISPLAYS
+// TWO UP CELL
 final class TwoUpCell: UITableViewCell {
 
     static let reuseID = "TwoUpCell"
@@ -350,6 +350,7 @@ final class TwoUpCell: UITableViewCell {
     }
 }
 
+// MINI CARD
 final class MiniCardView: UIView {
 
     private let titleLabel = UILabel()
@@ -421,6 +422,7 @@ final class MiniCardView: UIView {
     }
 }
 
+// AUDIT CELL
 final class AuditCell: UITableViewCell {
 
     static let reuseID = "AuditCell"
@@ -543,21 +545,72 @@ final class AuditCell: UITableViewCell {
     }
 }
 
-enum QR {
-    private static let context = CIContext()
-    private static let filter = CIFilter.qrCodeGenerator()
 
-    static func make(from string: String, size: CGFloat) -> UIImage? {
-        filter.setValue(Data(string.utf8), forKey: "inputMessage")
-        filter.correctionLevel = "M"
 
-        guard let output = filter.outputImage else { return nil }
 
-        let extent = output.extent.integral
-        let scale = min(size / extent.width, size / extent.height)
-        let scaled = output.transformed(by: CGAffineTransform(scaleX: scale, y: scale))
 
-        guard let cgimg = context.createCGImage(scaled, from: scaled.extent) else { return nil }
-        return UIImage(cgImage: cgimg)
+
+
+// LOADING DATA
+extension DeviceDetailsViewController: UITableViewDataSource {
+
+    // UITableView expects to be able to call methods called: numberOfSections; numberOfRowsInSection and cellForRowAt to load data.
+    // UIKit will take care of which sections / rows are visible at a given time.
+    
+    // First UIKit calls numberOfSections
+    func numberOfSections(in tableView: UITableView) -> Int {
+        DetailsTableSections.allCases.count
+    }
+
+    // Then numberOfRowsInSection gets called by UIKit for a given section (from above)
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        guard let s = DetailsTableSections(rawValue: section) else { return 0 }
+        switch s {
+        case .serial: return 1
+        case .userUpn: return 1
+        case .summary: return 1
+        }
+    }
+
+    // To load data, cellForRowAt gets called by UIKit for each row in a given section (from above)
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+
+        let debugging = configBool(forKey: "debugging")
+
+        guard let s = DetailsTableSections(rawValue: indexPath.section) else {
+            return UITableViewCell()
+        }
+
+        switch s {
+        case .serial:
+            let cell = tableView.dequeueReusableCell(withIdentifier: AuditCell.reuseID, for: indexPath) as! AuditCell
+            let v = configValue(forKey: "serial")
+            cell.configure(title: "Serial Number", subtitle: "Serial", value: v, qrText: v, showSubtitle: debugging)
+            return cell
+
+        case .userUpn:
+            let cell = tableView.dequeueReusableCell(withIdentifier: TwoUpCell.reuseID, for: indexPath) as! TwoUpCell
+            let userVal = configValue(forKey: "user")
+            let upnVal  = configValue(forKey: "upn")
+            cell.configure(
+                left: (title: "Primary User", subtitle: "user", value: userVal),
+                right: (title: "User Principal Name", subtitle: "upn", value: upnVal),
+                showSubtitle: debugging
+            )
+            return cell
+
+        case .summary:
+            let cell = tableView.dequeueReusableCell(withIdentifier: AuditCell.reuseID, for: indexPath) as! AuditCell
+            let json = summaryJSON()
+            cell.configure(
+                title: "Summary",
+                subtitle: "JSON",
+                value: json,
+                qrText: "\(json)",
+                isSummary: true,
+                showSubtitle: debugging
+            )
+            return cell
+        }
     }
 }
