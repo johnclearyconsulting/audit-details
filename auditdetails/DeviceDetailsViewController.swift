@@ -285,142 +285,7 @@ enum QR {
 
 
 // CELL DISPLAYS
-// TWO UP CELL
-final class TwoUpCell: UITableViewCell {
 
-    static let reuseID = "TwoUpCell"
-
-    private let container = UIView()
-    private let stack = UIStackView()
-
-    private let leftCard = MiniCardView()
-    private let rightCard = MiniCardView()
-
-    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
-        super.init(style: style, reuseIdentifier: reuseIdentifier)
-
-        backgroundColor = .clear
-        contentView.backgroundColor = .clear
-
-        container.backgroundColor = .clear
-        contentView.addSubview(container)
-        container.translatesAutoresizingMaskIntoConstraints = false
-
-        stack.axis = .horizontal
-        stack.alignment = .fill
-        stack.distribution = .fillEqually
-        stack.spacing = 12
-
-        stack.addArrangedSubview(leftCard)
-        stack.addArrangedSubview(rightCard)
-
-        container.addSubview(stack)
-        stack.translatesAutoresizingMaskIntoConstraints = false
-
-        NSLayoutConstraint.activate([
-            container.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 2),
-            container.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            container.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            container.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -2),
-
-            stack.topAnchor.constraint(equalTo: container.topAnchor),
-            stack.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            stack.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            stack.bottomAnchor.constraint(equalTo: container.bottomAnchor)
-        ])
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    override func prepareForReuse() {
-        super.prepareForReuse()
-        leftCard.reset()
-        rightCard.reset()
-    }
-
-    func configure(
-        left: (title: String, subtitle: String, value: String),
-        right: (title: String, subtitle: String, value: String),
-        showSubtitle: Bool
-    ) {
-        leftCard.configure(title: left.title, subtitle: left.subtitle, value: left.value, showSubtitle: showSubtitle)
-        rightCard.configure(title: right.title, subtitle: right.subtitle, value: right.value, showSubtitle: showSubtitle)
-    }
-}
-
-// MINI CARD
-final class MiniCardView: UIView {
-
-    private let titleLabel = UILabel()
-    private let subtitleLabel = UILabel()
-    private let valueLabel = UILabel()
-
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-
-        backgroundColor = .white
-        layer.cornerRadius = 12
-        layer.borderWidth = 1
-        layer.borderColor = UIColor.black.withAlphaComponent(0.08).cgColor
-
-        titleLabel.font = .preferredFont(forTextStyle: .headline)
-        titleLabel.numberOfLines = 2
-        titleLabel.textAlignment = .center
-
-        subtitleLabel.font = .preferredFont(forTextStyle: .caption1)
-        subtitleLabel.textColor = .secondaryLabel
-        subtitleLabel.textAlignment = .center
-
-        valueLabel.numberOfLines = 0
-        valueLabel.textAlignment = .center
-        valueLabel.font = UIFont.monospacedSystemFont(ofSize: UIFont.preferredFont(forTextStyle: .body).pointSize, weight: .regular)
-
-        let header = UIStackView(arrangedSubviews: [titleLabel, subtitleLabel])
-        header.axis = .vertical
-        header.alignment = .center
-        header.spacing = 2
-
-        let stack = UIStackView(arrangedSubviews: [header, valueLabel])
-        stack.axis = .vertical
-        stack.alignment = .fill
-        stack.spacing = 8
-
-        addSubview(stack)
-        stack.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            stack.topAnchor.constraint(equalTo: topAnchor, constant: 12),
-            stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
-            stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
-            stack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -12)
-        ])
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    func reset() {
-        titleLabel.text = nil
-        subtitleLabel.text = nil
-        valueLabel.text = nil
-    }
-
-    func configure(title: String, subtitle: String, value: String, showSubtitle: Bool) {
-        titleLabel.text = title
-        subtitleLabel.text = subtitle
-        subtitleLabel.isHidden = !showSubtitle
-
-        if value.isEmpty {
-            valueLabel.text = "—"
-            valueLabel.textColor = .secondaryLabel
-        } else {
-            valueLabel.textColor = .label
-            valueLabel.text = value
-        }
-    }
-}
 
 // AUDIT CELL
 final class AuditCell: UITableViewCell {
@@ -544,6 +409,144 @@ final class AuditCell: UITableViewCell {
         }
     }
 }
+
+// TWO UP CELL
+final class TwoUpCell: UITableViewCell {
+
+    static let reuseID = "TwoUpCell"
+
+    private let container = UIView()
+    private let stack = UIStackView()
+
+    private let leftCard = displayCard()
+    private let rightCard = displayCard()
+
+    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
+        super.init(style: style, reuseIdentifier: reuseIdentifier)
+
+        backgroundColor = .clear
+        contentView.backgroundColor = .clear
+
+        container.backgroundColor = .clear
+        contentView.addSubview(container)
+        container.translatesAutoresizingMaskIntoConstraints = false
+
+        stack.axis = .horizontal
+        stack.alignment = .fill
+        stack.distribution = .fillEqually
+        stack.spacing = 12
+
+        stack.addArrangedSubview(leftCard)
+        stack.addArrangedSubview(rightCard)
+
+        container.addSubview(stack)
+        stack.translatesAutoresizingMaskIntoConstraints = false
+
+        NSLayoutConstraint.activate([
+            container.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 2),
+            container.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
+            container.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            container.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -2),
+
+            stack.topAnchor.constraint(equalTo: container.topAnchor),
+            stack.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            stack.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            stack.bottomAnchor.constraint(equalTo: container.bottomAnchor)
+        ])
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        leftCard.reset()
+        rightCard.reset()
+    }
+
+    func configure(
+        left: (title: String, subtitle: String, value: String),
+        right: (title: String, subtitle: String, value: String),
+        showSubtitle: Bool
+    ) {
+        leftCard.configure(title: left.title, subtitle: left.subtitle, value: left.value, showSubtitle: showSubtitle)
+        rightCard.configure(title: right.title, subtitle: right.subtitle, value: right.value, showSubtitle: showSubtitle)
+    }
+}
+
+// displayCard CARD (of which there are two in a "Two Up" Cell)
+final class displayCard: UIView {
+
+    private let titleLabel = UILabel()
+    private let subtitleLabel = UILabel()
+    private let valueLabel = UILabel()
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+
+        backgroundColor = .white
+        layer.cornerRadius = 12
+        layer.borderWidth = 1
+        layer.borderColor = UIColor.black.withAlphaComponent(0.08).cgColor
+
+        titleLabel.font = .preferredFont(forTextStyle: .headline)
+        titleLabel.numberOfLines = 2
+        titleLabel.textAlignment = .center
+
+        subtitleLabel.font = .preferredFont(forTextStyle: .caption1)
+        subtitleLabel.textColor = .secondaryLabel
+        subtitleLabel.textAlignment = .center
+
+        valueLabel.numberOfLines = 0
+        valueLabel.textAlignment = .center
+        valueLabel.font = UIFont.monospacedSystemFont(ofSize: UIFont.preferredFont(forTextStyle: .body).pointSize, weight: .regular)
+
+        let header = UIStackView(arrangedSubviews: [titleLabel, subtitleLabel])
+        header.axis = .vertical
+        header.alignment = .center
+        header.spacing = 2
+
+        let stack = UIStackView(arrangedSubviews: [header, valueLabel])
+        stack.axis = .vertical
+        stack.alignment = .fill
+        stack.spacing = 8
+
+        addSubview(stack)
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: topAnchor, constant: 12),
+            stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
+            stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
+            stack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -12)
+        ])
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    func reset() {
+        titleLabel.text = nil
+        subtitleLabel.text = nil
+        valueLabel.text = nil
+    }
+
+    func configure(title: String, subtitle: String, value: String, showSubtitle: Bool) {
+        titleLabel.text = title
+        subtitleLabel.text = subtitle
+        subtitleLabel.isHidden = !showSubtitle
+
+        if value.isEmpty {
+            valueLabel.text = "—"
+            valueLabel.textColor = .secondaryLabel
+        } else {
+            valueLabel.textColor = .label
+            valueLabel.text = value
+        }
+    }
+}
+
 
 
 
