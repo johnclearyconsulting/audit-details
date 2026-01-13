@@ -142,8 +142,7 @@ final class DeviceDetailsViewController: UIViewController {
         detailsTable.dataSource = self
         detailsTable.estimatedRowHeight = 260
         detailsTable.rowHeight = UITableView.automaticDimension
-        detailsTable.register(AuditCell.self, forCellReuseIdentifier: AuditCell.reuseID)
-        detailsTable.register(TwoUpCell.self, forCellReuseIdentifier: TwoUpCell.reuseID)
+        detailsTable.register(DeviceDetailsRowCell.self, forCellReuseIdentifier: DeviceDetailsRowCell.reuseID)
 
 
         // Set DeviceDetailsViewController properties
@@ -284,19 +283,39 @@ enum QR {
 
 
 
-// CELL DISPLAYS
+// UNIFIED CELL: renders any number of displayCards horizontally
+final class DeviceDetailsRowCell: UITableViewCell {
 
+    static let reuseID = "DeviceDetailsRowCell"
 
-// AUDIT CELL
-final class AuditCell: UITableViewCell {
+    // MARK: - Model
+    struct CardModel {
+        let title: String
+        let subtitle: String
+        let value: String?       // nil => hide value label entirely
+        let qrText: String?      // nil => hide QR entirely
+        let isSummary: Bool      // affects value styling
+        let showSubtitle: Bool
 
-    static let reuseID = "AuditCell"
+        init(
+            title: String,
+            subtitle: String,
+            value: String? = nil,
+            qrText: String? = nil,
+            isSummary: Bool = false,
+            showSubtitle: Bool = true
+        ) {
+            self.title = title
+            self.subtitle = subtitle
+            self.value = value
+            self.qrText = qrText
+            self.isSummary = isSummary
+            self.showSubtitle = showSubtitle
+        }
+    }
 
-    private let titleLabel = UILabel()
-    private let subtitleLabel = UILabel()
-    private let valueLabel = UILabel()
-    private let qrImageView = UIImageView()
     private let container = UIView()
+    private let rowStack = UIStackView()
 
     override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
@@ -304,39 +323,17 @@ final class AuditCell: UITableViewCell {
         backgroundColor = .clear
         contentView.backgroundColor = .clear
 
-        container.backgroundColor = .white
-        container.layer.cornerRadius = 12
-        container.layer.borderWidth = 1
-        container.layer.borderColor = UIColor.black.withAlphaComponent(0.08).cgColor
-
-        titleLabel.font = .preferredFont(forTextStyle: .headline)
-        titleLabel.numberOfLines = 1
-
-        subtitleLabel.font = .preferredFont(forTextStyle: .caption1)
-        subtitleLabel.textColor = .secondaryLabel
-        subtitleLabel.setContentHuggingPriority(.required, for: .horizontal)
-
-        valueLabel.numberOfLines = 0
-
-        qrImageView.contentMode = .scaleAspectFit
-        qrImageView.layer.magnificationFilter = .nearest
-        qrImageView.backgroundColor = .white
-
+        container.backgroundColor = .clear
         contentView.addSubview(container)
         container.translatesAutoresizingMaskIntoConstraints = false
 
-        let header = UIStackView(arrangedSubviews: [titleLabel, UIView(), subtitleLabel])
-        header.axis = .horizontal
-        header.alignment = .top
-        header.spacing = 8
+        rowStack.axis = .horizontal
+        rowStack.alignment = .fill
+        rowStack.distribution = .fillEqually
+        rowStack.spacing = 12
 
-        let stack = UIStackView(arrangedSubviews: [header, valueLabel, qrImageView])
-        stack.axis = .vertical
-        stack.alignment = .center
-        stack.spacing = 8
-
-        container.addSubview(stack)
-        stack.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(rowStack)
+        rowStack.translatesAutoresizingMaskIntoConstraints = false
 
         NSLayoutConstraint.activate([
             container.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 2),
@@ -344,13 +341,10 @@ final class AuditCell: UITableViewCell {
             container.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
             container.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -2),
 
-            stack.topAnchor.constraint(equalTo: container.topAnchor, constant: 12),
-            stack.leadingAnchor.constraint(equalTo: container.leadingAnchor, constant: 12),
-            stack.trailingAnchor.constraint(equalTo: container.trailingAnchor, constant: -12),
-            stack.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -12),
-
-            qrImageView.widthAnchor.constraint(equalToConstant: 144),
-            qrImageView.heightAnchor.constraint(equalToConstant: 144),
+            rowStack.topAnchor.constraint(equalTo: container.topAnchor),
+            rowStack.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            rowStack.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            rowStack.bottomAnchor.constraint(equalTo: container.bottomAnchor)
         ])
     }
 
@@ -360,28 +354,141 @@ final class AuditCell: UITableViewCell {
 
     override func prepareForReuse() {
         super.prepareForReuse()
-        qrImageView.image = nil
-        valueLabel.text = nil
+        clearCards()
     }
-    
-    func configure(title: String, subtitle: String, value: String, qrText: String, isSummary: Bool = false, showSubtitle: Bool = true) {
-        titleLabel.text = title
-        subtitleLabel.text = subtitle
-        subtitleLabel.isHidden = !showSubtitle
-        
-        if value.isEmpty {
-            valueLabel.text = "—"
-            valueLabel.textColor = .secondaryLabel
-            valueLabel.font = UIFont.monospacedSystemFont(ofSize: UIFont.preferredFont(forTextStyle: .body).pointSize, weight: .regular)
-            qrImageView.image = placeholderQR()
-        } else {
-            valueLabel.textColor = isSummary ? .secondaryLabel : .label
-            valueLabel.font = isSummary
-                ? UIFont.monospacedSystemFont(ofSize: UIFont.preferredFont(forTextStyle: .caption1).pointSize, weight: .regular)
-                : UIFont.monospacedSystemFont(ofSize: UIFont.preferredFont(forTextStyle: .body).pointSize, weight: .regular)
 
-            valueLabel.text = value
-            qrImageView.image = QR.make(from: qrText, size: 144) ?? placeholderQR()
+    // MARK: - Configure
+    func configure(cards: [CardModel]) {
+        clearCards()
+
+        for model in cards {
+            let card = DeviceDetailsRowCellCard()
+            card.apply(model: model)
+            rowStack.addArrangedSubview(card)
+        }
+    }
+
+    private func clearCards() {
+        for v in rowStack.arrangedSubviews {
+            rowStack.removeArrangedSubview(v)
+            v.removeFromSuperview()
+        }
+    }
+}
+
+// DeviceDetailsRowCellCard (used by DeviceDetailsRowCell)
+final class DeviceDetailsRowCellCard: UIView {
+
+    private let titleLabel = UILabel()
+    private let subtitleLabel = UILabel()
+    private let valueLabel = UILabel()
+    private let qrImageView = UIImageView()
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+
+        backgroundColor = .white
+        layer.cornerRadius = 12
+        layer.borderWidth = 1
+        layer.borderColor = UIColor.black.withAlphaComponent(0.08).cgColor
+
+        titleLabel.font = .preferredFont(forTextStyle: .headline)
+        titleLabel.numberOfLines = 2
+        titleLabel.textAlignment = .center
+
+        subtitleLabel.font = .preferredFont(forTextStyle: .caption1)
+        subtitleLabel.textColor = .secondaryLabel
+        subtitleLabel.textAlignment = .center
+
+        valueLabel.numberOfLines = 0
+        valueLabel.textAlignment = .center
+
+        qrImageView.contentMode = .scaleAspectFit
+        qrImageView.layer.magnificationFilter = .nearest
+        qrImageView.backgroundColor = .white
+
+        let header = UIStackView(arrangedSubviews: [titleLabel, subtitleLabel])
+        header.axis = .vertical
+        header.alignment = .center
+        header.spacing = 2
+
+        let stack = UIStackView(arrangedSubviews: [header, valueLabel, qrImageView])
+        stack.axis = .vertical
+        stack.alignment = .fill
+        stack.spacing = 8
+
+        addSubview(stack)
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        qrImageView.translatesAutoresizingMaskIntoConstraints = false
+
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: topAnchor, constant: 12),
+            stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
+            stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
+            stack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -12),
+
+            qrImageView.heightAnchor.constraint(equalToConstant: 144)
+        ])
+
+        reset()
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    func reset() {
+        titleLabel.text = nil
+        subtitleLabel.text = nil
+        subtitleLabel.isHidden = false
+
+        valueLabel.text = nil
+        valueLabel.textColor = .label
+        valueLabel.isHidden = true
+
+        qrImageView.image = nil
+        qrImageView.isHidden = true
+    }
+
+    func apply(model: DeviceDetailsRowCell.CardModel) {
+        titleLabel.text = model.title
+        subtitleLabel.text = model.subtitle
+        subtitleLabel.isHidden = !model.showSubtitle
+
+        // VALUE (optional)
+        if let v = model.value {
+            valueLabel.isHidden = false
+
+            if v.isEmpty {
+                valueLabel.text = "—"
+                valueLabel.textColor = .secondaryLabel
+                valueLabel.font = UIFont.monospacedSystemFont(
+                    ofSize: UIFont.preferredFont(forTextStyle: .body).pointSize,
+                    weight: .regular
+                )
+            } else {
+                valueLabel.textColor = model.isSummary ? .secondaryLabel : .label
+                valueLabel.font = model.isSummary
+                    ? UIFont.monospacedSystemFont(ofSize: UIFont.preferredFont(forTextStyle: .caption1).pointSize, weight: .regular)
+                    : UIFont.monospacedSystemFont(ofSize: UIFont.preferredFont(forTextStyle: .body).pointSize, weight: .regular)
+                valueLabel.text = v
+            }
+        } else {
+            valueLabel.isHidden = true
+            valueLabel.text = nil
+        }
+
+        // QR (optional)
+        if let qrText = model.qrText {
+            qrImageView.isHidden = false
+            if let v = model.value, v.isEmpty {
+                qrImageView.image = placeholderQR()
+            } else {
+                qrImageView.image = QR.make(from: qrText, size: 144) ?? placeholderQR()
+            }
+        } else {
+            qrImageView.isHidden = true
+            qrImageView.image = nil
         }
     }
 
@@ -409,146 +516,6 @@ final class AuditCell: UITableViewCell {
         }
     }
 }
-
-// TWO UP CELL
-final class TwoUpCell: UITableViewCell {
-
-    static let reuseID = "TwoUpCell"
-
-    private let container = UIView()
-    private let stack = UIStackView()
-
-    private let leftCard = displayCard()
-    private let rightCard = displayCard()
-
-    override init(style: UITableViewCell.CellStyle, reuseIdentifier: String?) {
-        super.init(style: style, reuseIdentifier: reuseIdentifier)
-
-        backgroundColor = .clear
-        contentView.backgroundColor = .clear
-
-        container.backgroundColor = .clear
-        contentView.addSubview(container)
-        container.translatesAutoresizingMaskIntoConstraints = false
-
-        stack.axis = .horizontal
-        stack.alignment = .fill
-        stack.distribution = .fillEqually
-        stack.spacing = 12
-
-        stack.addArrangedSubview(leftCard)
-        stack.addArrangedSubview(rightCard)
-
-        container.addSubview(stack)
-        stack.translatesAutoresizingMaskIntoConstraints = false
-
-        NSLayoutConstraint.activate([
-            container.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 2),
-            container.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            container.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            container.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -2),
-
-            stack.topAnchor.constraint(equalTo: container.topAnchor),
-            stack.leadingAnchor.constraint(equalTo: container.leadingAnchor),
-            stack.trailingAnchor.constraint(equalTo: container.trailingAnchor),
-            stack.bottomAnchor.constraint(equalTo: container.bottomAnchor)
-        ])
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    override func prepareForReuse() {
-        super.prepareForReuse()
-        leftCard.reset()
-        rightCard.reset()
-    }
-
-    func configure(
-        left: (title: String, subtitle: String, value: String),
-        right: (title: String, subtitle: String, value: String),
-        showSubtitle: Bool
-    ) {
-        leftCard.configure(title: left.title, subtitle: left.subtitle, value: left.value, showSubtitle: showSubtitle)
-        rightCard.configure(title: right.title, subtitle: right.subtitle, value: right.value, showSubtitle: showSubtitle)
-    }
-}
-
-// displayCard CARD (of which there are two in a "Two Up" Cell)
-final class displayCard: UIView {
-
-    private let titleLabel = UILabel()
-    private let subtitleLabel = UILabel()
-    private let valueLabel = UILabel()
-
-    override init(frame: CGRect) {
-        super.init(frame: frame)
-
-        backgroundColor = .white
-        layer.cornerRadius = 12
-        layer.borderWidth = 1
-        layer.borderColor = UIColor.black.withAlphaComponent(0.08).cgColor
-
-        titleLabel.font = .preferredFont(forTextStyle: .headline)
-        titleLabel.numberOfLines = 2
-        titleLabel.textAlignment = .center
-
-        subtitleLabel.font = .preferredFont(forTextStyle: .caption1)
-        subtitleLabel.textColor = .secondaryLabel
-        subtitleLabel.textAlignment = .center
-
-        valueLabel.numberOfLines = 0
-        valueLabel.textAlignment = .center
-        valueLabel.font = UIFont.monospacedSystemFont(ofSize: UIFont.preferredFont(forTextStyle: .body).pointSize, weight: .regular)
-
-        let header = UIStackView(arrangedSubviews: [titleLabel, subtitleLabel])
-        header.axis = .vertical
-        header.alignment = .center
-        header.spacing = 2
-
-        let stack = UIStackView(arrangedSubviews: [header, valueLabel])
-        stack.axis = .vertical
-        stack.alignment = .fill
-        stack.spacing = 8
-
-        addSubview(stack)
-        stack.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            stack.topAnchor.constraint(equalTo: topAnchor, constant: 12),
-            stack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
-            stack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
-            stack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -12)
-        ])
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    func reset() {
-        titleLabel.text = nil
-        subtitleLabel.text = nil
-        valueLabel.text = nil
-    }
-
-    func configure(title: String, subtitle: String, value: String, showSubtitle: Bool) {
-        titleLabel.text = title
-        subtitleLabel.text = subtitle
-        subtitleLabel.isHidden = !showSubtitle
-
-        if value.isEmpty {
-            valueLabel.text = "—"
-            valueLabel.textColor = .secondaryLabel
-        } else {
-            valueLabel.textColor = .label
-            valueLabel.text = value
-        }
-    }
-}
-
-
-
 
 
 
@@ -586,33 +553,29 @@ extension DeviceDetailsViewController: UITableViewDataSource {
 
         switch s {
         case .serial:
-            let cell = tableView.dequeueReusableCell(withIdentifier: AuditCell.reuseID, for: indexPath) as! AuditCell
+            let cell = tableView.dequeueReusableCell(withIdentifier: DeviceDetailsRowCell.reuseID, for: indexPath) as! DeviceDetailsRowCell
             let v = configValue(forKey: "serial")
-            cell.configure(title: "Serial Number", subtitle: "Serial", value: v, qrText: v, showSubtitle: debugging)
+            cell.configure(cards: [
+                .init(title: "Serial Number", subtitle: "Serial", value: v, qrText: v, showSubtitle: debugging)
+            ])
             return cell
 
         case .userUpn:
-            let cell = tableView.dequeueReusableCell(withIdentifier: TwoUpCell.reuseID, for: indexPath) as! TwoUpCell
+            let cell = tableView.dequeueReusableCell(withIdentifier: DeviceDetailsRowCell.reuseID, for: indexPath) as! DeviceDetailsRowCell
             let userVal = configValue(forKey: "user")
             let upnVal  = configValue(forKey: "upn")
-            cell.configure(
-                left: (title: "Primary User", subtitle: "user", value: userVal),
-                right: (title: "User Principal Name", subtitle: "upn", value: upnVal),
-                showSubtitle: debugging
-            )
+            cell.configure(cards: [
+                .init(title: "Primary User", subtitle: "user", value: userVal, showSubtitle: debugging),
+                .init(title: "User Principal Name", subtitle: "upn", value: upnVal, showSubtitle: debugging)
+            ])
             return cell
 
         case .summary:
-            let cell = tableView.dequeueReusableCell(withIdentifier: AuditCell.reuseID, for: indexPath) as! AuditCell
+            let cell = tableView.dequeueReusableCell(withIdentifier: DeviceDetailsRowCell.reuseID, for: indexPath) as! DeviceDetailsRowCell
             let json = summaryJSON()
-            cell.configure(
-                title: "Summary",
-                subtitle: "JSON",
-                value: json,
-                qrText: "\(json)",
-                isSummary: true,
-                showSubtitle: debugging
-            )
+            cell.configure(cards: [
+                .init(title: "Summary", subtitle: "JSON", value: json, qrText: json, isSummary: true, showSubtitle: debugging)
+            ])
             return cell
         }
     }
